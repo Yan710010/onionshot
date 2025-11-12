@@ -11,7 +11,7 @@ You can also install it using `cargo install --release`
 ## Dependencies
 
 - `hyprland`
-- `hyprpicker`
+- `wayfreeze`
 - `grim`
 - `slurp`
 - `wl-copy`
