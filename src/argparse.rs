@@ -18,6 +18,10 @@ pub struct ApplicationArgs {
     /// Skip dependency check on start
     #[arg(long)]
     pub skip_depcheck: bool,
+
+    /// Disable hyprland animation when freeze the screen
+    #[arg(long)]
+    pub disable_animation: bool,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]

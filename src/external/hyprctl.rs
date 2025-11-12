@@ -1,13 +1,13 @@
 use crate::external::common::is_number_array;
 
 use super::common::Geometry;
-use std::process::{Command, Stdio};
+use json::JsonValue;
+use std::process::Command;
 
-pub fn get_active_window() -> Geometry {
+fn get_data(args: Vec<String>) -> JsonValue {
     let output = Command::new("hyprctl")
         .arg("-j")
-        .arg("activewindow")
-        .stdout(Stdio::piped())
+        .args(args)
         .output()
         .expect("Failed to spawn hyprctl");
     if !output.status.success() {
@@ -16,8 +16,11 @@ pub fn get_active_window() -> Geometry {
     let Ok(data) = str::from_utf8(&output.stdout) else {
         panic!("non-utf8 fuck off");
     };
+    json::parse(data).expect("hyprctl -j not returning json")
+}
 
-    let obj = json::parse(data).expect("hyprctl -j not returning json");
+pub fn get_active_window() -> Geometry {
+    let obj = get_data(vec!["activewindow".into()]);
     if !obj.is_object() {
         panic!(
             "failed to parse hyprctl's active window output: not an object at top level"
@@ -56,42 +59,12 @@ pub fn get_active_window() -> Geometry {
 }
 
 pub fn get_active_screen() -> Geometry {
-    // Get active output
-    let output = Command::new("hyprctl")
-        .arg("-j")
-        .arg("activeworkspace")
-        .stdout(Stdio::piped())
-        .output()
-        .expect("Failed to spawn hyprctl");
-    if !output.status.success() {
-        panic!("Failed to execute hyprctl");
-    }
-    let Ok(data) = str::from_utf8(&output.stdout) else {
-        panic!("non-utf8 fuck off");
-    };
-
-    let workspace_obj =
-        json::parse(data).expect("hyprctl -j not returning json");
+    let workspace_obj = get_data(vec!["activeworkspace".into()]);
     let monitor_id = workspace_obj["monitorID"]
         .as_usize()
         .expect("failed to parse hyprctl's active workspace output");
 
-    // Get active output's bound
-    let output = Command::new("hyprctl")
-        .arg("-j")
-        .arg("monitors")
-        .stdout(Stdio::piped())
-        .output()
-        .expect("Failed to spawn hyprctl");
-    if !output.status.success() {
-        panic!("Failed to execute hyprctl");
-    }
-    let Ok(data) = str::from_utf8(&output.stdout) else {
-        panic!("non-utf8 fuck off");
-    };
-
-    let monitor =
-        &json::parse(data).expect("hyprctl -j not returning json")[monitor_id];
+    let monitor = &get_data(vec!["monitors".into()])[monitor_id];
 
     let msg = "failed to parse hyprctl's monitor output";
 
@@ -107,4 +80,21 @@ pub fn get_active_screen() -> Geometry {
         w: w as u32,
         h: h as u32,
     }
+}
+
+pub fn set_animation(f: bool) -> bool {
+    let status =
+        get_data(vec!["getoption".into(), "animations:enabled".into()])["int"]
+            .as_i8()
+            .expect("Unknown animation status:");
+    let status = status != 0;
+
+    Command::new("hyprctl")
+        .arg("keyword")
+        .arg("animations:enabled")
+        .arg(if f { "yes" } else { "no" })
+        .output()
+        .expect("Failed to execute hyprctl");
+    // Return previous animation status
+    status
 }

@@ -9,7 +9,7 @@ use crate::{
         clipboard::copy_png,
         freeze::freeze_screen,
         grim::grim_with_geometry,
-        hyprctl::{get_active_screen, get_active_window},
+        hyprctl::{get_active_screen, get_active_window, set_animation},
         notify::{
             notify_clipboard_save, notify_save_fail, notify_screenshot_save,
         },
@@ -90,12 +90,24 @@ pub fn region_shot(args: &ApplicationArgs) {
     let tmppath = temp_dir().join(&name);
 
     if args.freeze {
+        let status = if args.disable_animation {
+            set_animation(false)
+        } else {
+            false
+        };
+
         let f = freeze_screen();
         let Some(geometry) = slurp_geometry() else {
+            if args.disable_animation {
+                set_animation(status);
+            }
             return;
         };
         grim_with_geometry(&tmppath, geometry);
         drop(f);
+        if args.disable_animation {
+            set_animation(status);
+        }
         save_image(&tmppath, &picpath, args.storage);
     } else {
         let Some(geometry) = slurp_geometry() else {
