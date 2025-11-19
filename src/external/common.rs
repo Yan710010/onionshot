@@ -9,6 +9,7 @@ pub struct Geometry {
 }
 
 pub fn is_number_array(obj: &JsonValue, len: usize) -> bool {
-    obj.is_array() && obj.len() == len && obj.members().fold(true, |m, x| m && x.is_number())
+    obj.is_array()
+        && obj.len() == len
+        && obj.members().fold(true, |m, x| m && x.is_number())
 }
-
