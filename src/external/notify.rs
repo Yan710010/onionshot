@@ -6,6 +6,7 @@ pub fn notify_screenshot_save(screenshot_path: &Path) {
         .arg(screenshot_path.to_string_lossy().to_string())
         .arg("-a")
         .arg("onionshot")
+        .arg("--transient")
         .arg("Screenshot saved")
         .arg(format!(
             "Screenshot successfully saved to {}",
@@ -19,6 +20,7 @@ pub fn notify_clipboard_save() {
     Command::new("notify-send")
         .arg("-a")
         .arg("onionshot")
+        .arg("--transient")
         .arg("Screenshot saved")
         .arg("Screenshot successfully saved to clipboard")
         .output()
@@ -29,6 +31,7 @@ pub fn notify_save_fail(error: std::io::Error) {
     Command::new("notify-send")
         .arg("-a")
         .arg("onionshot")
+        .arg("--transient")
         .arg("Screenshot saving failed")
         .arg(format!("Screenshot failed to save: {}", error))
         .output()
