@@ -2,6 +2,7 @@ use clap::Parser;
 use onionshot::{
     argparse::{ApplicationArgs, Mode},
     depcheck::check_dep,
+    lock::Lock,
     onionshot::{active_window_shot, fullscreen_shot, region_shot},
 };
 
@@ -19,6 +20,13 @@ fn main() {
         }));
     }
 
+    let _lock = match Lock::new() {
+        Ok(lock) => lock,
+        Err(e) => {
+            eprintln!("{e}");
+            return;
+        }
+    };
     let args = ApplicationArgs::parse();
 
     if !args.skip_depcheck {
