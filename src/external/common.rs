@@ -19,11 +19,13 @@ pub fn is_number_array(obj: &JsonValue, len: usize) -> bool {
 }
 
 pub fn fetch_cmd_output(cmd: &str, args: &[&str]) -> Result<String> {
-    let output = Command::new(cmd).args(args).stdout(Stdio::piped()).output()?;
+    let output = Command::new(cmd)
+        .args(args)
+        .stdout(Stdio::piped())
+        .output()?;
     if !output.status.success() {
         Err(AppError::ExecutionFailed(cmd.into()))
     } else {
         String::from_utf8(output.stdout).map_err(|_| AppError::Encoding)
     }
 }
-
