@@ -1,23 +1,13 @@
 use crate::{
     error::{AppError, JSONValidationError, Result},
-    external::common::is_number_array,
+    external::common::{fetch_cmd_output, is_number_array},
 };
 
 use super::common::Geometry;
-use std::process::{Command, Stdio};
 
 pub fn get_active_window() -> Result<Geometry> {
-    let output = Command::new("hyprctl")
-        .arg("-j")
-        .arg("activewindow")
-        .stdout(Stdio::piped())
-        .output()?;
-    if !output.status.success() {
-        return Err(AppError::ExecutionFailed("hyprctl".into()));
-    }
-    let data =
-        str::from_utf8(&output.stdout).map_err(|_| AppError::Encoding)?;
-    let obj = json::parse(data)?;
+    let data = fetch_cmd_output("hyprctl", &["-j", "activewindow"])?;
+    let obj = json::parse(&data)?;
     if !obj.is_object() {
         return Err(AppError::JSONValidationError(
             "hyprctl's active window output".into(),
@@ -68,17 +58,8 @@ pub fn get_active_window() -> Result<Geometry> {
 
 pub fn get_active_screen() -> Result<Geometry> {
     // Get active output
-    let output = Command::new("hyprctl")
-        .arg("-j")
-        .arg("activeworkspace")
-        .stdout(Stdio::piped())
-        .output()?;
-    if !output.status.success() {
-        return Err(AppError::ExecutionFailed("hyprctl".into()));
-    }
-    let data =
-        str::from_utf8(&output.stdout).map_err(|_| AppError::Encoding)?;
-    let workspace_obj = json::parse(data)?;
+    let data = fetch_cmd_output("hyprctl", &["-j", "activeworkspace"])?;
+    let workspace_obj = json::parse(&data)?;
     let monitor_id = workspace_obj["monitorID"].as_usize().ok_or(
         AppError::JSONValidationError(
             "hyprctl's active workspace output".into(),
@@ -90,20 +71,8 @@ pub fn get_active_screen() -> Result<Geometry> {
     )?;
 
     // Get active output's bound
-    let output = Command::new("hyprctl")
-        .arg("-j")
-        .arg("monitors")
-        .stdout(Stdio::piped())
-        .output()?;
-    if !output.status.success() {
-        return Err(AppError::ExecutionFailed("hyprctl".into()));
-    }
-    let data =
-        str::from_utf8(&output.stdout).map_err(|_| AppError::Encoding)?;
-
-    let monitor = &json::parse(data)?[monitor_id];
-
-    let _msg = "failed to parse hyprctl's monitor output";
+    let data = fetch_cmd_output("hyprctl", &["-j", "monitors"])?;
+    let monitor = &json::parse(&data)?[monitor_id];
 
     let scale =
         monitor["scale"]
