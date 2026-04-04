@@ -1,8 +1,10 @@
 use std::process::{Command, Stdio};
 
+use crate::error::{AppError, Result};
+
 use super::common::Geometry;
 
-pub fn slurp_geometry() -> Option<Geometry> {
+pub fn slurp_geometry() -> Result<Geometry> {
     let output = Command::new("slurp")
         .arg("-d")
         .arg("-w")
@@ -10,26 +12,32 @@ pub fn slurp_geometry() -> Option<Geometry> {
         .arg("-f")
         .arg("%x %y %w %h")
         .stdout(Stdio::piped())
-        .output()
-        .expect("failed to spawn slurp");
+        .output()?;
     if !output.status.success() {
-        return None;
+        return Err(AppError::ExecutionFailed("slurp".into()));
     }
 
-    let data = str::from_utf8(&output.stdout)
-        .expect("there shouldn't be anything non-utf8 in the output... right? right?? right???");
+    let data =
+        str::from_utf8(&output.stdout).map_err(|_| AppError::Encoding)?;
     let nums = data
         .trim()
         .split(' ')
-        .map(|x| {
-            x.parse::<i64>()
-                .expect("invalid output from slurp... what happened?")
+        .map(|x| x.parse::<i64>().ok())
+        .fold(Some(Vec::new()), |init, item| {
+            if let Some(init) = init
+                && let Some(item) = item
+            {
+                Some(init.iter().chain([item].iter()).map(|x| *x).collect())
+            } else {
+                None
+            }
         })
-        .collect::<Vec<_>>();
+        //.map(|x| x.iter().collect::<Vec<_>>())
+        .ok_or(AppError::CommandInvalidOuput("slurp".into(), data.into()))?;
     if nums.len() != 4 {
-        panic!("slurp doesn't output 4 numbers");
+        return Err(AppError::CommandInvalidOuput("slurp".into(), data.into()));
     }
-    Some(Geometry {
+    Ok(Geometry {
         x: nums[0] as i32,
         y: nums[1] as i32,
         w: nums[2] as u32,

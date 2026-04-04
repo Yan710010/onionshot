@@ -1,3 +1,5 @@
+use std::process::ExitCode;
+
 use clap::Parser;
 use onionshot::{
     argparse::{ApplicationArgs, Mode},
@@ -5,7 +7,7 @@ use onionshot::{
     onionshot::{active_window_shot, fullscreen_shot, region_shot},
 };
 
-fn main() {
+fn main() -> ExitCode {
     if cfg!(not(debug_assertions)) {
         std::panic::set_hook(Box::new(|info| {
             eprint!("\x1b[31mFATAL\x1b[00: ");
@@ -28,19 +30,17 @@ fn main() {
             } else {
                 eprintln!("Missing dependencies: {}", missing.join(", "));
             }
-            return;
+            return ExitCode::FAILURE;
         }
     }
 
-    match args.mode {
-        Mode::Fullscreen => {
-            fullscreen_shot(&args);
-        }
-        Mode::ActiveWindow => {
-            active_window_shot(&args);
-        }
-        Mode::Region => {
-            region_shot(&args);
-        }
+    if let Err(err) = match args.mode {
+        Mode::Fullscreen => fullscreen_shot(&args),
+        Mode::ActiveWindow => active_window_shot(&args),
+        Mode::Region => region_shot(&args),
+    } {
+        eprintln!("FATAL ERROR: {}", err);
+        return ExitCode::FAILURE;
     }
+    return ExitCode::SUCCESS;
 }
