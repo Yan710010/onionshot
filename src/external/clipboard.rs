@@ -1,3 +1,4 @@
+use crate::error::{AppError, Result};
 use std::{
     fs::OpenOptions,
     io::{Read, Write},
@@ -5,7 +6,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-pub fn copy_png(path: &Path) -> std::io::Result<()> {
+pub fn copy_png(path: &Path) -> Result<()> {
     let mut pngdata = Vec::new();
     OpenOptions::new()
         .read(true)
@@ -15,13 +16,11 @@ pub fn copy_png(path: &Path) -> std::io::Result<()> {
         .arg("--type")
         .arg("image/png")
         .stdin(Stdio::piped())
-        .spawn()
-        .expect("failed to spawn wl-copy");
+        .spawn()?;
     let Some(mut input) = wlcopy.stdin else {
         wlcopy.kill().unwrap();
-        panic!("failed to obtain stdin of wl-copy");
+        return Err(AppError::CommandStdinError("wl-copy".into()));
     };
     input.write_all(&pngdata)?;
-    drop(input);
     Ok(())
 }

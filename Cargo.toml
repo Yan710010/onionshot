@@ -9,7 +9,9 @@ repository = "https://www.codeberg.org/onion27/onionshot"
 [dependencies]
 chrono = "0.4.41"
 clap = { version = "4.5.43", features = ["derive"] }
+concat-idents = "1.1.5"
 json = "0.12.4"
+thiserror = "2.0.18"
 
 [profile.release]
 strip = true

@@ -1,3 +1,4 @@
+use crate::error::Result;
 use std::{
     process::{Child, Command},
     thread::sleep,
@@ -8,13 +9,10 @@ pub struct FreezeHandle {
     child: Child,
 }
 
-pub fn freeze_screen() -> FreezeHandle {
-    let child = Command::new("wayfreeze")
-        .arg("--hide-cursor")
-        .spawn()
-        .expect("failed to spawn wayfreeze");
+pub fn freeze_screen() -> Result<FreezeHandle> {
+    let child = Command::new("wayfreeze").arg("--hide-cursor").spawn()?;
     sleep(Duration::from_millis(100));
-    FreezeHandle { child }
+    Ok(FreezeHandle { child })
 }
 
 impl Drop for FreezeHandle {

@@ -5,6 +5,7 @@ use chrono::{Datelike, Timelike};
 use crate::{
     argparse::{ApplicationArgs, StorageMode},
     env::{ensure_screenshot_dir, screenshot_dir},
+    error::Result,
     external::{
         clipboard::copy_png,
         freeze::freeze_screen,
@@ -30,60 +31,63 @@ fn generate_image_name() -> String {
     )
 }
 
-fn save_image(from: &Path, to: &Path, mode: StorageMode) {
+fn save_image(from: &Path, to: &Path, mode: StorageMode) -> Result<()> {
     match mode {
         StorageMode::FilesystemOnly => {
             if let Err(err) = std::fs::copy(from, to) {
-                notify_save_fail(err);
+                notify_save_fail(err.into())?;
             } else {
-                notify_screenshot_save(to);
+                notify_screenshot_save(to)?;
             }
         }
         StorageMode::ClipboardOnly => {
             if let Err(err) = copy_png(from) {
-                notify_save_fail(err);
+                notify_save_fail(err)?;
             } else {
-                notify_clipboard_save();
+                notify_clipboard_save()?;
             }
         }
         StorageMode::Both => {
             if let Err(err) = std::fs::copy(from, to) {
-                notify_save_fail(err);
+                notify_save_fail(err.into())?;
             } else {
-                notify_screenshot_save(to);
+                notify_screenshot_save(to)?;
             }
             if let Err(err) = copy_png(from) {
-                notify_save_fail(err);
+                notify_save_fail(err)?;
             } else {
-                notify_clipboard_save();
+                notify_clipboard_save()?;
             }
         }
     }
-    _ = std::fs::remove_file(from);
+    std::fs::remove_file(from)?;
+    Ok(())
 }
 
-pub fn fullscreen_shot(args: &ApplicationArgs) {
+pub fn fullscreen_shot(args: &ApplicationArgs) -> Result<()> {
     ensure_screenshot_dir();
     let name = generate_image_name();
     let picpath = screenshot_dir().join(&name);
     let tmppath = temp_dir().join(&name);
-    let geometry = get_active_screen();
-    grim_with_geometry(&tmppath, geometry);
-    save_image(&tmppath, &picpath, args.storage);
+    let geometry = get_active_screen()?;
+    grim_with_geometry(&tmppath, geometry)?;
+    save_image(&tmppath, &picpath, args.storage)?;
+    Ok(())
 }
 
-pub fn active_window_shot(args: &ApplicationArgs) {
+pub fn active_window_shot(args: &ApplicationArgs) -> Result<()> {
     ensure_screenshot_dir();
     let name = generate_image_name();
     let picpath = screenshot_dir().join(&name);
     let tmppath = temp_dir().join(&name);
 
-    let geometry = get_active_window();
-    grim_with_geometry(&tmppath, geometry);
-    save_image(&tmppath, &picpath, args.storage);
+    let geometry = get_active_window()?;
+    grim_with_geometry(&tmppath, geometry)?;
+    save_image(&tmppath, &picpath, args.storage)?;
+    Ok(())
 }
 
-pub fn region_shot(args: &ApplicationArgs) {
+pub fn region_shot(args: &ApplicationArgs) -> Result<()> {
     ensure_screenshot_dir();
     let name = generate_image_name();
     let picpath = screenshot_dir().join(&name);
@@ -95,26 +99,18 @@ pub fn region_shot(args: &ApplicationArgs) {
         } else {
             false
         };
-
-        let f = freeze_screen();
-        let Some(geometry) = slurp_geometry() else {
-            if args.disable_animation {
-                set_animation(status);
-            }
-            return;
-        };
-        grim_with_geometry(&tmppath, geometry);
+        let f = freeze_screen()?;
+        let geometry = slurp_geometry()?;
+        grim_with_geometry(&tmppath, geometry)?;
         drop(f);
         if args.disable_animation {
             set_animation(status);
         }
-        save_image(&tmppath, &picpath, args.storage);
+        save_image(&tmppath, &picpath, args.storage)?;
     } else {
-        let Some(geometry) = slurp_geometry() else {
-            _ = std::fs::remove_file(&tmppath);
-            return;
-        };
-        grim_with_geometry(&tmppath, geometry);
-        save_image(&tmppath, &picpath, args.storage);
+        let geometry = slurp_geometry()?;
+        grim_with_geometry(&tmppath, geometry)?;
+        save_image(&tmppath, &picpath, args.storage)?;
     }
+    Ok(())
 }
