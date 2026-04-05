@@ -95,7 +95,7 @@ pub fn region_shot(args: &ApplicationArgs) -> Result<()> {
 
     if args.freeze {
         let status = if args.disable_animation {
-            set_animation(false)
+            set_animation(false)?
         } else {
             false
         };
@@ -104,7 +104,7 @@ pub fn region_shot(args: &ApplicationArgs) -> Result<()> {
         grim_with_geometry(&tmppath, geometry)?;
         drop(f);
         if args.disable_animation {
-            set_animation(status);
+            set_animation(status)?;
         }
         save_image(&tmppath, &picpath, args.storage)?;
     } else {

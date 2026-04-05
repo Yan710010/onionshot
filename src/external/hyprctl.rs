@@ -9,24 +9,6 @@ use crate::{
 };
 
 use super::common::Geometry;
-use json::JsonValue;
-use std::process::Command;
-
-fn get_data(args: Vec<String>) -> JsonValue {
-    let output = Command::new("hyprctl")
-        .arg("-j")
-        .args(args)
-        .output()
-        .expect("Failed to spawn hyprctl");
-    if !output.status.success() {
-        panic!("Failed to execute hyprctl");
-    }
-    let Ok(data) = str::from_utf8(&output.stdout) else {
-        panic!("non-utf8 fuck off");
-    };
-    json::parse(data).expect("hyprctl -j not returning json")
-}
-
 
 pub fn get_active_window() -> Result<Geometry> {
     const CONTEXT: &str = "hyprctl's active window output";
@@ -74,19 +56,23 @@ pub fn get_active_screen() -> Result<Geometry> {
     })
 }
 
-pub fn set_animation(f: bool) -> bool {
-    let status =
-        get_data(vec!["getoption".into(), "animations:enabled".into()])["int"]
-            .as_i8()
-            .expect("Unknown animation status:");
+pub fn set_animation(f: bool) -> Result<bool> {
+    const CONTEXT: &str = "hyprctl's active window output";
+    let data = fetch_cmd_output("hyprctl", &[
+        "-j",
+        "getoption",
+        "animations:enabled",
+    ])?;
+    let obj = json::parse(&data)?;
+    assume_object_toplevel(CONTEXT, &obj)?;
+    let status = try_get_object_key_as_i32(CONTEXT, &obj, "int")?;
     let status = status != 0;
 
-    Command::new("hyprctl")
-        .arg("keyword")
-        .arg("animations:enabled")
-        .arg(if f { "yes" } else { "no" })
-        .output()
-        .expect("Failed to execute hyprctl");
+    fetch_cmd_output("hyprctl", &[
+        "keyword",
+        "animations:enabled",
+        if f { "yes" } else { "no" },
+    ])?;
     // Return previous animation status
-    status
+    Ok(status)
 }
