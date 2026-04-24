@@ -11,7 +11,7 @@ use onionshot::{
 fn main() -> ExitCode {
     if cfg!(not(debug_assertions)) {
         std::panic::set_hook(Box::new(|info| {
-            eprint!("\x1b[31mFATAL\x1b[00: ");
+            eprint!("\x1b[31mFATAL\x1b[0m ");
             if let Some(msg) = info.payload().downcast_ref::<&str>() {
                 eprintln!("{msg}");
             } else if let Some(msg) = info.payload().downcast_ref::<String>() {
