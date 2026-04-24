@@ -24,6 +24,9 @@ pub enum AppError {
 
     #[error("Failed to obtain stdin of {0}")]
     CommandStdinError(String),
+
+    #[error(transparent)]
+    LockError(LockError),
 }
 
 #[derive(Error, Debug)]
@@ -36,6 +39,18 @@ pub enum JSONValidationError {
 
     #[error("property `{0}' isn't {1}")]
     PropertyTypeError(String, String),
+}
+
+#[derive(Error, Debug)]
+pub enum LockError {
+    #[error("Another instance is already running.")]
+    ExistingInstance,
+
+    #[error("Dirty lock {0} exists and can not remove: {1}")]
+    DitryLock(std::path::PathBuf, io::Error),
+
+    #[error("Failed to create lock: {0}")]
+    CreatingLockFailed(#[from] io::Error),
 }
 
 pub type Result<T> = std::result::Result<T, AppError>;

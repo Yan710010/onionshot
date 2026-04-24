@@ -3,5 +3,6 @@ pub mod depcheck;
 pub mod env;
 pub mod error;
 pub mod external;
+pub mod lock;
 pub mod onionshot;
 pub mod validation;

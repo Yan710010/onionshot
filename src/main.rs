@@ -4,6 +4,7 @@ use clap::Parser;
 use onionshot::{
     argparse::{ApplicationArgs, Mode},
     depcheck::check_dep,
+    lock::Lock,
     onionshot::{active_window_shot, fullscreen_shot, region_shot},
 };
 
@@ -21,6 +22,13 @@ fn main() -> ExitCode {
         }));
     }
 
+    let _lock = match Lock::new() {
+        Ok(l) => l,
+        Err(e) => {
+            eprintln!("\x1b[31mFATAL ERROR:\x1b[0m {e}");
+            return ExitCode::FAILURE;
+        }
+    };
     let args = ApplicationArgs::parse();
 
     if !args.skip_depcheck {
